@@ -1,5 +1,6 @@
 ﻿using ChessChallenge.API;
 using System;
+using System.Collections.Generic;
 using System.Runtime;
 
 public class MyBot : IChessBot
@@ -31,25 +32,64 @@ public class MyBot : IChessBot
             return outp;
         }
 
+        //should probably do just checks first
+        //add those moves to a set
+        //and then do all moves and continue if in set
+        //for optimal pruning
+        Move[] captures = board.GetLegalMoves(true);
+        HashSet<Move> captureSet = new HashSet<Move>();
+        Move[] moves = board.GetLegalMoves();
+
         if (maximizingPlayer)
         {
             MiniMaxOutput maxEval = new MiniMaxOutput();
             maxEval.Value = Int32.MinValue;
-
-            //should probably do just checks first
-            //add those moves to a set
-            //and then do all moves and continue if in set
-            //for optimal pruning
-            Move[] moves = board.GetLegalMoves();
             maxEval.Move = moves[0];//default to prevent any errors
 
-            foreach (Move move in moves)
+            //iterate through captures first
+            foreach (Move move in captures)
             {
+                //add the move to the set of captures
+                captureSet.Add(move);
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
                 //undo move
                 board.UndoMove(move);
+
+                //see if it's better
+                if (moveOut.Value > maxEval.Value)
+                {
+                    maxEval.Value = moveOut.Value;
+                    maxEval.Move = move;
+
+                    //alpha beta prune
+                    if (maxEval.Value > alpha)
+                    {
+                        alpha = maxEval.Value;
+                        if (beta <= alpha)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+            }
+            //iterate through the rest of the moves
+            foreach (Move move in moves)
+            {
+                //if we've already seen this move we can skip it
+                if (captureSet.Contains(move))
+                {
+                    continue;
+                }
+
+                //make and evaluate move
+                board.MakeMove(move);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
+                //undo move
+                board.UndoMove(move);
+
                 //see if it's better
                 if (moveOut.Value > maxEval.Value)
                 {
@@ -75,16 +115,45 @@ public class MyBot : IChessBot
         {
             MiniMaxOutput minEval = new MiniMaxOutput();
             minEval.Value = Int32.MaxValue;
-
-            //should probably do just checks first
-            //add those moves to a set
-            //and then do all moves and continue if in set
-            //for optimal pruning
-            Move[] moves = board.GetLegalMoves();
             minEval.Move = moves[0];//default to prevent any errors
 
+            //iterate through captures first
+            foreach (Move move in captures)
+            {
+                //add the move to the set of captures
+                captureSet.Add(move);
+                //make and evaluate move
+                board.MakeMove(move);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
+                //undo move
+                board.UndoMove(move);
+
+                //see if it's better
+                if (moveOut.Value < minEval.Value)
+                {
+                    minEval.Value = moveOut.Value;
+                    minEval.Move = move;
+
+                    //alpha beta prune
+                    if (minEval.Value < beta)
+                    {
+                        beta = minEval.Value;
+                        if (beta <= alpha)
+                        {
+                            break;
+                        }
+                    }
+                }
+
+            }
+            //iterate through the rest of the moves
             foreach (Move move in moves)
             {
+                //if we've already seen this move we can skip it
+                if (captureSet.Contains(move))
+                {
+                    continue;
+                }
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
