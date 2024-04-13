@@ -48,7 +48,8 @@ public class MyBot : IChessBot
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
-
+                //undo move
+                board.UndoMove(move);
                 //see if it's better
                 if (moveOut.Value > maxEval.Value)
                 {
@@ -65,9 +66,6 @@ public class MyBot : IChessBot
                         }
                     }
                 }
-
-                //undo move
-                board.UndoMove(move);
 
             }
 
@@ -90,6 +88,8 @@ public class MyBot : IChessBot
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
+                //undo move
+                board.UndoMove(move);
 
                 //see if it's better
                 if (moveOut.Value < minEval.Value)
@@ -107,9 +107,6 @@ public class MyBot : IChessBot
                         }
                     }
                 }
-
-                //undo move
-                board.UndoMove(move);
 
             }
             return minEval;
