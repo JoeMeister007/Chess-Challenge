@@ -230,6 +230,131 @@ public class MyBot : IChessBot
 
     }
 
+    //define our piece-square tables
+    //adapted from the simplified eval function
+    //https://www.chessprogramming.org/Simplified_Evaluation_Function
+
+    //a piece-square table for pawns from white's perspective
+    //Protect the castle spots
+    //occupy the center
+    //advance pawns
+    double[] pawnTable = { 
+     0,  0,  0,  0,  0,  0,  0,  0,
+     50, 50, 50, 50, 50, 50, 50, 50,
+     10, 10, 20, 30, 30, 20, 10, 10,
+     5,  5, 10, 25, 25, 10,  5,  5,
+     0,  0,  0, 20, 20,  0,  0,  0,
+     5, -5,-10,  0,  0,-10, -5,  5,
+     5, 10, 10,-20,-20, 10, 10,  5,
+     0,  0,  0,  0,  0,  0,  0,  0};
+
+    //a piece-square table for knights from white's perspective
+    //knights on the rim are grim
+    double[] knightTable = { 
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50
+    };
+
+    //a piece-square table for bishop from white's perspective
+    //Avoids corners and edges
+    //This table is intertwined with the knights so that in some positions it'll trade
+    //and in others it won't
+    double[] bishopTable = {
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20
+    };    
+    
+    //a piece-square table for rooks from white's perspective
+    //rook is incentivized to centralize, go to the 7th rank,
+    //and avoid the edges
+    double[] rookTable = {
+      0,  0,  0,  0,  0,  0,  0,  0,
+      5, 10, 10, 10, 10, 10, 10,  5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+      0,  0,  0,  5,  5,  0,  0,  0
+    };
+    
+    //a piece-square table for queens from white's perspective
+    //Queen is slightly better in the middle but tactics will
+    //largely dictate where it goes
+    double[] queenTable = {
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+     -5,  0,  5,  5,  5,  5,  0, -5,
+      0,  0,  5,  5,  5,  5,  0, -5,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20
+    }; 
+    
+    //a piece-square table for kings from white's perspective
+    //the king is incentivized to castle and stay back
+    double[] kingTable = {
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+     20, 20,  0,  0,  0,  0, 20, 20,
+     20, 30, 10,  0,  0, 10, 30, 20
+    };    
+    
+    //a piece-square table for kings in the endgame from white's perspective
+    //we have two here because in the end game the king should go up
+    double[] kingEndgameTable = {
+    -50,-40,-30,-20,-20,-30,-40,-50,
+    -30,-20,-10,  0,  0,-10,-20,-30,
+    -30,-10, 20, 30, 30, 20,-10,-30,
+    -30,-10, 30, 40, 40, 30,-10,-30,
+    -30,-10, 30, 40, 40, 30,-10,-30,
+    -30,-10, 20, 30, 30, 20,-10,-30,
+    -30,-30,  0,  0,  0,  0,-30,-30,
+    -50,-30,-30,-30,-30,-30,-30,-50
+    };
+
+
+    private bool inEndGame(Board board)
+    {
+        //queens off the board
+        if (board.GetPieceBitboard(PieceType.Queen, true) == 0 && board.GetPieceBitboard(PieceType.Queen, false) == 0)
+        {
+            return true;
+        }
+        //there exists a queen
+
+        //if there's also a rook it's not the end game
+        if (board.GetPieceList(PieceType.Rook, true).Count > 0 || board.GetPieceList(PieceType.Rook, false).Count > 0)
+        {
+            return false;
+        }
+
+        //return ture if there's only one minor piece per side
+        if (board.GetPieceList(PieceType.Bishop, true).Count + board.GetPieceList(PieceType.Knight, true).Count <= 1 && board.GetPieceList(PieceType.Bishop, false).Count + board.GetPieceList(PieceType.Knight, false).Count <= 1)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     //Gives an evaluation of the position of the current board (centipawns)
     private double evaluate(Board board)
     {
@@ -253,7 +378,25 @@ public class MyBot : IChessBot
             foreach (Piece p in pl)
             {
                 //white advantage is +, black is - like in stockfish
-                double val = p.IsWhite ? 1 : -1;
+                double val = 0;
+
+                int pieceIndex = 0;
+                if (p.IsWhite)
+                {
+                    //we have to do some conversion because the internal representation treats
+                    //bottom left as 0,0
+                    //but we treat top left as 0,0
+                    int row = 7 - p.Square.Rank;
+                    int col = p.Square.File;
+                    pieceIndex = row * 8 + col;
+                }
+                else
+                {
+                    //as black we use the same table, but now it's vertically flipped (not rotated, see aligned kings)
+                    int row = p.Square.Rank; //7 - (7 - p.Square.Rank)
+                    int col = p.Square.File;
+                    pieceIndex = row * 8 + col;
+                }
 
                 //using the weights (in centipawns) from the simplified eval function
                 //https://www.chessprogramming.org/Simplified_Evaluation_Function
@@ -269,31 +412,50 @@ public class MyBot : IChessBot
                 switch (p.PieceType)
                 {
                     case PieceType.Pawn:
-                        val *= 100;
+                        val = 100;
+                        val += pawnTable[pieceIndex];
                         break;
                     case PieceType.Knight:
-                        val *= 320;
+                        val = 320;
+                        val += knightTable[pieceIndex];
+
                         break;
                     case PieceType.Bishop:
-                        val *= 330;
+                        val = 330;
+                        val += bishopTable[pieceIndex];
+
                         break;
                     case PieceType.Rook:
-                        val *= 500;
+                        val = 500;
+                        val += rookTable[pieceIndex];
                         break;
                     case PieceType.Queen:
-                        val *= 900;
+                        val = 900;
+                        val += queenTable[pieceIndex];
+
                         break;
                     case PieceType.King:
-                        val *= 20000;
+                        val = 20000;
+                        if (!inEndGame(board))
+                        {
+                            val += kingTable[pieceIndex];
+                        }
+                        else
+                        {
+                            val += kingEndgameTable[pieceIndex];
+                        }
+                        //add end game check
                         break;
                     default:
                         val = 0;
                         break;
                 }
+
                 //add up the vals
-                eval += val;
+                eval += (p.IsWhite ? 1 : -1) * val;
             }
         }
+
         return eval;
 
     }
