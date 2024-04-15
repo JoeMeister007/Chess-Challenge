@@ -255,23 +255,36 @@ public class MyBot : IChessBot
                 //white advantage is +, black is - like in stockfish
                 double val = p.IsWhite ? 1 : -1;
 
-                //just using generic weights for each piece like you think of in chess.com
+                //using the weights (in centipawns) from the simplified eval function
+                //https://www.chessprogramming.org/Simplified_Evaluation_Function
+                //Has some good properties:
+                //B > N > 3P
+                //B + N > R + P
+                //R + 2P > B + N
+                //Q + P = 2N
+                //
+                //Not perfect though:
+                //2B + N > Q
+                //R + N + P > Q
                 switch (p.PieceType)
                 {
                     case PieceType.Pawn:
-                        val *= 1;
+                        val *= 100;
                         break;
                     case PieceType.Knight:
-                        val *= 3;
+                        val *= 320;
                         break;
                     case PieceType.Bishop:
-                        val *= 3;
+                        val *= 330;
                         break;
                     case PieceType.Rook:
-                        val *= 5;
+                        val *= 500;
                         break;
                     case PieceType.Queen:
-                        val *= 9;
+                        val *= 900;
+                        break;
+                    case PieceType.King:
+                        val *= 20000;
                         break;
                     default:
                         val = 0;
