@@ -70,6 +70,7 @@ public class MyBot : IChessBot
             }
         }
 
+        Move? lastIterationBestMove = null;
         Move? bestMove = null;
         double bestValueWhite = double.MinValue;
         double bestValueBlack = double.MaxValue;
@@ -81,7 +82,7 @@ public class MyBot : IChessBot
         while (stopwatch.ElapsedMilliseconds < timeLimit && depth <= maxDepth)
         {
             // Run minimax for the current depth
-            MiniMaxOutput miniMaxOutput = minimax(board, depth, double.MinValue, double.MaxValue, board.IsWhiteToMove, bestMove);
+            MiniMaxOutput miniMaxOutput = minimax(board, depth, double.MinValue, double.MaxValue, board.IsWhiteToMove, lastIterationBestMove);
 
             // Update the best move if we found a better one
             if (board.IsWhiteToMove && miniMaxOutput.Value > bestValueWhite)
@@ -89,11 +90,20 @@ public class MyBot : IChessBot
                 bestMove = miniMaxOutput.Move;
                 bestValueWhite = miniMaxOutput.Value;
             }
-            if (!board.IsWhiteToMove && miniMaxOutput.Value < bestValueBlack)
+            else if (!board.IsWhiteToMove && miniMaxOutput.Value < bestValueBlack)
             {
                 bestMove = miniMaxOutput.Move;
                 bestValueBlack = miniMaxOutput.Value;
             }
+            lastIterationBestMove = bestMove;
+            //reset for the next depth
+            //we have to reset because the first iteration may take the rook with the queen
+            //and then the queen dies on the next iteration
+            //but if that evaluation isn't better it'll still think taking with the queen is good
+            //cause it doesn't reset for the deeper and wiser eval
+            bestMove = null; 
+            bestValueWhite = double.MinValue;
+            bestValueBlack = double.MaxValue;
 
             depth++;
         }
@@ -104,12 +114,12 @@ public class MyBot : IChessBot
         // Console.WriteLine("Time elapsed: {0} ms at depth {1}", stopwatch.ElapsedMilliseconds, depth - 1);
 
 
-        if (bestMove == null)
+        if (lastIterationBestMove == null)
         {
             throw new InvalidOperationException("Think method is returning null altought expected a non-null Move.");
         }
-
-        return bestMove.Value;
+        //this is the best move from the last iteration we finished
+        return lastIterationBestMove.Value;
 
 
     }
@@ -167,6 +177,12 @@ public class MyBot : IChessBot
                 {
                     maxEval.Value = moveOut.Value;
                     maxEval.Move = bestMove.Value;
+
+                    //alpha beta prune
+                    if (maxEval.Value > alpha)
+                    {
+                        alpha = maxEval.Value;
+                    }
                 }
             }
 
@@ -253,7 +269,7 @@ public class MyBot : IChessBot
                 captureSet.Add(bestMove.Value);
                 //make and evaluate move
                 board.MakeMove(bestMove.Value);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true, null);
                 //undo move
                 board.UndoMove(bestMove.Value);
 
@@ -262,6 +278,11 @@ public class MyBot : IChessBot
                 {
                     minEval.Value = moveOut.Value;
                     minEval.Move = bestMove.Value;
+                    //alpha beta prune
+                    if (minEval.Value < beta)
+                    {
+                        beta = minEval.Value;
+                    }
                 }
             }
 
