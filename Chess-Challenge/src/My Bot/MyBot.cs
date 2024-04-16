@@ -3,12 +3,20 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Reflection.PortableExecutable;
 using System.Runtime;
 
 public class MyBot : IChessBot
 {
+    // milis
+    private int timeLimit = 15000;
+
+    // Having the timer control our depth is better since sometimes based on board state, more depths can be evaluated at time t
+    // The problem is sometimes depth 4 could finish in less than timeLimit, so depth 5 starts, but once it starts it can't be stopped and could take seconds
+    private int maxDepth = 3;
+
     private OpeningBook whiteOpeningBook;
     private OpeningBook d4OpeningBook;
     private OpeningBook e4OpeningBook;
@@ -29,6 +37,14 @@ public class MyBot : IChessBot
 
     public Move Think(Board board, Timer timer)
     {
+
+        // Make a list for moves
+
+        Stopwatch stopwatch = new Stopwatch();
+
+        // Start timing
+        stopwatch.Start();
+
         if (board.IsWhiteToMove)
         {
             Move? move = whiteOpeningBook.GetMove(board);
@@ -54,10 +70,48 @@ public class MyBot : IChessBot
             }
         }
 
-        int depth = 3;
+        Move? bestMove = null;
+        double bestValueWhite = double.MinValue;
+        double bestValueBlack = double.MaxValue;
+        int depth = 1;
+
+
         //White maximizes, black minimizes
-        MiniMaxOutput miniMaxOutput = minimax(board, depth, Int32.MaxValue, Int32.MinValue, board.IsWhiteToMove);
-        return miniMaxOutput.Move;
+
+        while (stopwatch.ElapsedMilliseconds < timeLimit && depth <= maxDepth)
+        {
+            // Run minimax for the current depth
+            MiniMaxOutput miniMaxOutput = minimax(board, depth, double.MinValue, double.MaxValue, board.IsWhiteToMove, bestMove);
+
+            // Update the best move if we found a better one
+            if (board.IsWhiteToMove && miniMaxOutput.Value > bestValueWhite)
+            {
+                bestMove = miniMaxOutput.Move;
+                bestValueWhite = miniMaxOutput.Value;
+            }
+            if (!board.IsWhiteToMove && miniMaxOutput.Value < bestValueBlack)
+            {
+                bestMove = miniMaxOutput.Move;
+                bestValueBlack = miniMaxOutput.Value;
+            }
+
+            depth++;
+        }
+
+        stopwatch.Stop();
+
+        // Write the elapsed time in milliseconds
+        // Console.WriteLine("Time elapsed: {0} ms at depth {1}", stopwatch.ElapsedMilliseconds, depth - 1);
+
+
+        if (bestMove == null)
+        {
+            throw new InvalidOperationException("Think method is returning null altought expected a non-null Move.");
+        }
+
+        return bestMove.Value;
+
+
     }
 
     private class MiniMaxOutput
@@ -69,14 +123,18 @@ public class MyBot : IChessBot
     }
 
     //following pseudocode from https://www.youtube.com/watch?v=l-hh51ncgDI
-    private MiniMaxOutput minimax(Board board, int depth, double alpha, double beta, bool maximizingPlayer)
+    private MiniMaxOutput minimax(Board board, int depth, double alpha, double beta, bool maximizingPlayer, Move? bestMove)
     {
+
         if (depth == 0 || board.IsInCheckmate() || board.IsDraw())
         {
+            // transpositions?
             MiniMaxOutput outp = new MiniMaxOutput();
             outp.Value = evaluate(board);
             return outp;
         }
+
+
 
         //should probably do just checks first
         //add those moves to a set
@@ -86,20 +144,46 @@ public class MyBot : IChessBot
         HashSet<Move> captureSet = new HashSet<Move>();
         Move[] moves = board.GetLegalMoves();
 
+
+
         if (maximizingPlayer)
         {
             MiniMaxOutput maxEval = new MiniMaxOutput();
             maxEval.Value = Int32.MinValue;
             maxEval.Move = moves[0];//default to prevent any errors
 
+            if (bestMove != null)
+            {
+                //add the move to the set of captures
+                captureSet.Add(bestMove.Value);
+                //make and evaluate move
+                board.MakeMove(bestMove.Value);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
+                //undo move
+                board.UndoMove(bestMove.Value);
+
+                //see if it's better
+                if (moveOut.Value > maxEval.Value)
+                {
+                    maxEval.Value = moveOut.Value;
+                    maxEval.Move = bestMove.Value;
+                }
+            }
+
             //iterate through captures first
             foreach (Move move in captures)
             {
+                //if we've already seen this move we can skip it
+                if (captureSet.Contains(move))
+                {
+                    continue;
+                }
+
                 //add the move to the set of captures
                 captureSet.Add(move);
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
                 //undo move
                 board.UndoMove(move);
 
@@ -132,7 +216,7 @@ public class MyBot : IChessBot
 
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
                 //undo move
                 board.UndoMove(move);
 
@@ -163,14 +247,37 @@ public class MyBot : IChessBot
             minEval.Value = Int32.MaxValue;
             minEval.Move = moves[0];//default to prevent any errors
 
+            if (bestMove != null)
+            {
+                //add the move to the set of captures
+                captureSet.Add(bestMove.Value);
+                //make and evaluate move
+                board.MakeMove(bestMove.Value);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
+                //undo move
+                board.UndoMove(bestMove.Value);
+
+                //see if it's better
+                if (moveOut.Value < minEval.Value)
+                {
+                    minEval.Value = moveOut.Value;
+                    minEval.Move = bestMove.Value;
+                }
+            }
+
             //iterate through captures first
             foreach (Move move in captures)
             {
+                if (captureSet.Contains(move))
+                {
+                    continue;
+                }
+
                 //add the move to the set of captures
                 captureSet.Add(move);
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true, null);
                 //undo move
                 board.UndoMove(move);
 
@@ -202,7 +309,7 @@ public class MyBot : IChessBot
                 }
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true, null);
                 //undo move
                 board.UndoMove(move);
 
@@ -357,6 +464,7 @@ public class MyBot : IChessBot
 
 private double evalKingSafety(Board board, double currentEval)
     {
+        return 0;
         if (Math.Abs(currentEval) > 4.0)
         {
             // true = white, false = black
