@@ -353,6 +353,47 @@ public class MyBot : IChessBot
         }
 
         return false;
+}
+
+private double evalKingSafety(Board board, double currentEval)
+    {
+        if (Math.Abs(currentEval) > 4.0)
+        {
+            // true = white, false = black
+            bool winningSide = currentEval > 0;
+            
+            double kingSafetyVal = 0.0;
+
+            // Bitboard of all the places the losing king can't move, starting with occupied squares
+            // Not including the losing side's own pieces, since this has more to do with "influence"
+            // rather than literally restricting the king (which could discourage things like castling)
+            ulong blockedSquares = winningSide ? board.WhitePiecesBitboard : board.BlackPiecesBitboard;
+
+            foreach (PieceType pt in Enum.GetValues(typeof(PieceType)))
+            {
+                if (pt == PieceType.None)
+                {
+                    continue;
+                }
+
+                foreach (Piece p in board.GetPieceList(pt, winningSide))
+                {
+                    // Include the attacking pieces of the player currently making a move
+                    blockedSquares |= BitboardHelper.GetPieceAttacks(pt, p.Square, board, winningSide);
+                }
+            }
+
+            // Everywhere the losing king can move (assuming nothing blocking it)
+            ulong losingSideKingAttacks = BitboardHelper.GetKingAttacks(board.GetKingSquare(!winningSide));
+
+            // Actual number of squares the losing king can move to
+            double totalKingAttacks = BitboardHelper.GetNumberOfSetBits(losingSideKingAttacks & blockedSquares);
+            
+            kingSafetyVal = (1.0 - (totalKingAttacks / 8.0)) * (winningSide ? -100 : 100);
+
+            return kingSafetyVal;
+        }
+        return 0.0;
     }
 
     //Gives an evaluation of the position of the current board (centipawns)
@@ -455,6 +496,8 @@ public class MyBot : IChessBot
                 eval += (p.IsWhite ? 1 : -1) * val;
             }
         }
+
+        eval += evalKingSafety(board, eval);
 
         return eval;
 
