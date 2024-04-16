@@ -91,11 +91,15 @@ namespace ChessChallenge.Application
                 botTaskWaitHandle = new AutoResetEvent(false);
                 Task.Factory.StartNew(BotThinkerThread, TaskCreationOptions.LongRunning);
             }
+
             // Board Setup
             board = new Board();
+
             bool isGameWithHuman = whiteType is PlayerType.Human || blackType is PlayerType.Human;
             int fenIndex = isGameWithHuman ? 0 : botMatchGameIndex / 2;
             board.LoadPosition(botMatchStartFens[fenIndex]);
+
+            board.LoadPosition("R7/8/8/4k3/8/8/8/7K w - - 0 1");
 
             // Player Setup
             PlayerWhite = CreatePlayer(whiteType);
@@ -111,6 +115,7 @@ namespace ChessChallenge.Application
             // Start
             isPlaying = true;
             NotifyTurnToMove();
+
         }
 
         void BotThinkerThread()
