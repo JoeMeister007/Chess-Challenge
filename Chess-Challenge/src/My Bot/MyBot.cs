@@ -97,59 +97,18 @@ public class MyBot : IChessBot
         //    }
         //}
 
-        Move? lastIterationBestMove = null;
-        Move? bestMove = null;
-        double bestValueWhite = double.MinValue;
-        double bestValueBlack = double.MaxValue;
-        int depth = 1;
 
         evalsPerThink[botNum] = 0;
         numThinks[botNum]++;
 
+        int depth = 3;
         //White maximizes, black minimizes
+        MiniMaxOutput miniMaxOutput = minimax(board, depth, Int32.MaxValue, Int32.MinValue, board.IsWhiteToMove);
 
-        while (stopwatch.ElapsedMilliseconds < timeLimit && depth <= maxDepth)
-        {
-            // Run minimax for the current depth
-            MiniMaxOutput miniMaxOutput = minimax(board, depth, double.MinValue, double.MaxValue, board.IsWhiteToMove, lastIterationBestMove);
-
-            // Update the best move if we found a better one
-            if (board.IsWhiteToMove && miniMaxOutput.Value > bestValueWhite)
-            {
-                bestMove = miniMaxOutput.Move;
-                bestValueWhite = miniMaxOutput.Value;
-            }
-            else if (!board.IsWhiteToMove && miniMaxOutput.Value < bestValueBlack)
-            {
-                bestMove = miniMaxOutput.Move;
-                bestValueBlack = miniMaxOutput.Value;
-            }
-            lastIterationBestMove = bestMove;
-            //reset for the next depth
-            //we have to reset because the first iteration may take the rook with the queen
-            //and then the queen dies on the next iteration
-            //but if that evaluation isn't better it'll still think taking with the queen is good
-            //cause it doesn't reset for the deeper and wiser eval
-            bestMove = null; 
-            bestValueWhite = double.MinValue;
-            bestValueBlack = double.MaxValue;
-
-            depth++;
-        }
-
-        stopwatch.Stop();
         totalEvals[botNum] += evalsPerThink[botNum];
 
-        // Write the elapsed time in milliseconds
-        // Console.WriteLine("Time elapsed: {0} ms at depth {1}", stopwatch.ElapsedMilliseconds, depth - 1);
-
-
-        if (lastIterationBestMove == null)
-        {
-            throw new InvalidOperationException("Think method is returning null altought expected a non-null Move.");
-        }
         //this is the best move from the last iteration we finished
-        return lastIterationBestMove.Value;
+        return miniMaxOutput.Move;
 
 
     }
@@ -163,18 +122,15 @@ public class MyBot : IChessBot
     }
 
     //following pseudocode from https://www.youtube.com/watch?v=l-hh51ncgDI
-    private MiniMaxOutput minimax(Board board, int depth, double alpha, double beta, bool maximizingPlayer, Move? bestMove)
+    //following pseudocode from https://www.youtube.com/watch?v=l-hh51ncgDI
+    private MiniMaxOutput minimax(Board board, int depth, double alpha, double beta, bool maximizingPlayer)
     {
-
         if (depth == 0 || board.IsInCheckmate() || board.IsDraw())
         {
-            // transpositions?
             MiniMaxOutput outp = new MiniMaxOutput();
             outp.Value = evaluate(board);
             return outp;
         }
-
-
 
         //should probably do just checks first
         //add those moves to a set
@@ -184,52 +140,20 @@ public class MyBot : IChessBot
         HashSet<Move> captureSet = new HashSet<Move>();
         Move[] moves = board.GetLegalMoves();
 
-
-
         if (maximizingPlayer)
         {
             MiniMaxOutput maxEval = new MiniMaxOutput();
             maxEval.Value = Int32.MinValue;
             maxEval.Move = moves[0];//default to prevent any errors
 
-            if (bestMove != null)
-            {
-                //add the move to the set of captures
-                captureSet.Add(bestMove.Value);
-                //make and evaluate move
-                board.MakeMove(bestMove.Value);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
-                //undo move
-                board.UndoMove(bestMove.Value);
-
-                //see if it's better
-                if (moveOut.Value > maxEval.Value)
-                {
-                    maxEval.Value = moveOut.Value;
-                    maxEval.Move = bestMove.Value;
-
-                    //alpha beta prune
-                    if (maxEval.Value > alpha)
-                    {
-                        alpha = maxEval.Value;
-                    }
-                }
-            }
-
             //iterate through captures first
             foreach (Move move in captures)
             {
-                //if we've already seen this move we can skip it
-                if (captureSet.Contains(move))
-                {
-                    continue;
-                }
-
                 //add the move to the set of captures
                 captureSet.Add(move);
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
                 //undo move
                 board.UndoMove(move);
 
@@ -262,7 +186,7 @@ public class MyBot : IChessBot
 
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false, null);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
                 //undo move
                 board.UndoMove(move);
 
@@ -293,42 +217,14 @@ public class MyBot : IChessBot
             minEval.Value = Int32.MaxValue;
             minEval.Move = moves[0];//default to prevent any errors
 
-            if (bestMove != null)
-            {
-                //add the move to the set of captures
-                captureSet.Add(bestMove.Value);
-                //make and evaluate move
-                board.MakeMove(bestMove.Value);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true, null);
-                //undo move
-                board.UndoMove(bestMove.Value);
-
-                //see if it's better
-                if (moveOut.Value < minEval.Value)
-                {
-                    minEval.Value = moveOut.Value;
-                    minEval.Move = bestMove.Value;
-                    //alpha beta prune
-                    if (minEval.Value < beta)
-                    {
-                        beta = minEval.Value;
-                    }
-                }
-            }
-
             //iterate through captures first
             foreach (Move move in captures)
             {
-                if (captureSet.Contains(move))
-                {
-                    continue;
-                }
-
                 //add the move to the set of captures
                 captureSet.Add(move);
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true, null);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
                 //undo move
                 board.UndoMove(move);
 
@@ -360,7 +256,7 @@ public class MyBot : IChessBot
                 }
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true, null);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
                 //undo move
                 board.UndoMove(move);
 
@@ -387,7 +283,6 @@ public class MyBot : IChessBot
 
 
     }
-
     //define our piece-square tables
     //adapted from the simplified eval function
     //https://www.chessprogramming.org/Simplified_Evaluation_Function
