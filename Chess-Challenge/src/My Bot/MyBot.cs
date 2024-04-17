@@ -144,9 +144,8 @@ public class MyBot : IChessBot
             maxEval.Value = Int32.MinValue;
             maxEval.Move = moves[0];//default to prevent any errors
 
-            for (int i = moves.Length - 1; i >= 0; i--)
+            foreach (Move move in moves)
             {
-                Move move = moves[i];
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
@@ -182,9 +181,8 @@ public class MyBot : IChessBot
 
             //iterate through the rest of the moves
 
-            for (int i = moves.Length - 1; i >=0; i--)
+            foreach (Move move in moves)
             {
-                Move move = moves[i];
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
