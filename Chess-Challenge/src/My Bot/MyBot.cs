@@ -103,7 +103,7 @@ public class MyBot : IChessBot
 
         int depth = 3;
         //White maximizes, black minimizes
-        MiniMaxOutput miniMaxOutput = minimax(board, depth, Int32.MaxValue, Int32.MinValue, board.IsWhiteToMove);
+        MiniMaxOutput miniMaxOutput = minimax(board, depth, Int32.MinValue, Int32.MaxValue, board.IsWhiteToMove);
 
         totalEvals[botNum] += evalsPerThink[botNum];
 
