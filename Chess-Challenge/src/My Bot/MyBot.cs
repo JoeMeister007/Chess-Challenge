@@ -103,7 +103,7 @@ public class MyBot : IChessBot
 
         int depth = 3;
         //White maximizes, black minimizes
-        MiniMaxOutput miniMaxOutput = minimax(board, depth, Int32.MaxValue, Int32.MinValue, board.IsWhiteToMove);
+        MiniMaxOutput miniMaxOutput = minimax(board, depth, Int32.MinValue, Int32.MaxValue, board.IsWhiteToMove);
 
         totalEvals[botNum] += evalsPerThink[botNum];
 
@@ -144,9 +144,9 @@ public class MyBot : IChessBot
             maxEval.Value = Int32.MinValue;
             maxEval.Move = moves[0];//default to prevent any errors
 
-            //iterate through the rest of the moves
-            foreach (Move move in moves)
+            for (int i = moves.Length - 1; i >= 0; i--)
             {
+                Move move = moves[i];
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
@@ -181,8 +181,10 @@ public class MyBot : IChessBot
             minEval.Move = moves[0];//default to prevent any errors
 
             //iterate through the rest of the moves
-            foreach (Move move in moves)
+
+            for (int i = moves.Length - 1; i >=0; i--)
             {
+                Move move = moves[i];
                 //make and evaluate move
                 board.MakeMove(move);
                 MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
