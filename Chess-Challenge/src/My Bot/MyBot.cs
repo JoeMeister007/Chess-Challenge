@@ -103,7 +103,7 @@ public class MyBot : IChessBot
 
         int depth = 3;
         //White maximizes, black minimizes
-        MiniMaxOutput miniMaxOutput = minimax(board, depth, Int32.MaxValue, Int32.MinValue, board.IsWhiteToMove);
+        MiniMaxOutput miniMaxOutput = minimax(board, depth, board.IsWhiteToMove);
 
         totalEvals[botNum] += evalsPerThink[botNum];
 
@@ -123,7 +123,7 @@ public class MyBot : IChessBot
 
     //following pseudocode from https://www.youtube.com/watch?v=l-hh51ncgDI
     //following pseudocode from https://www.youtube.com/watch?v=l-hh51ncgDI
-    private MiniMaxOutput minimax(Board board, int depth, double alpha, double beta, bool maximizingPlayer)
+    private MiniMaxOutput minimax(Board board, int depth, bool maximizingPlayer)
     {
         if (depth == 0 || board.IsInCheckmate() || board.IsDraw())
         {
@@ -149,7 +149,7 @@ public class MyBot : IChessBot
             {
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, false);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, false);
                 //undo move
                 board.UndoMove(move);
 
@@ -159,15 +159,6 @@ public class MyBot : IChessBot
                     maxEval.Value = moveOut.Value;
                     maxEval.Move = move;
 
-                    //alpha beta prune
-                    if (maxEval.Value > alpha)
-                    {
-                        alpha = maxEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
                 }
 
             }
@@ -185,7 +176,7 @@ public class MyBot : IChessBot
             {
                 //make and evaluate move
                 board.MakeMove(move);
-                MiniMaxOutput moveOut = minimax(board, depth - 1, alpha, beta, true);
+                MiniMaxOutput moveOut = minimax(board, depth - 1, true);
                 //undo move
                 board.UndoMove(move);
 
@@ -195,15 +186,6 @@ public class MyBot : IChessBot
                     minEval.Value = moveOut.Value;
                     minEval.Move = move;
 
-                    //alpha beta prune
-                    if (minEval.Value < beta)
-                    {
-                        beta = minEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
                 }
 
             }
