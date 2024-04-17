@@ -15,7 +15,7 @@ public class MyBot : IChessBot
 
     // Having the timer control our depth is better since sometimes based on board state, more depths can be evaluated at time t
     // The problem is sometimes depth 4 could finish in less than timeLimit, so depth 5 starts, but once it starts it can't be stopped and could take seconds
-    private int maxDepth = 3;
+    private int maxDepth = 4;
 
     private OpeningBook whiteOpeningBook;
     private OpeningBook d4OpeningBook;
@@ -485,7 +485,6 @@ public class MyBot : IChessBot
 
 private double evalKingSafety(Board board, double currentEval)
     {
-        return 0;
         if (Math.Abs(currentEval) > 4.0)
         {
             // true = white, false = black
