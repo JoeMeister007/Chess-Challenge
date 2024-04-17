@@ -213,7 +213,7 @@ namespace ChessChallenge.Application
         {
             return type switch
             {
-                PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds),
+                PlayerType.MyBot => new ChessPlayer(new MyBot(), type, GameDurationMilliseconds * 10000),
                 PlayerType.EvilBot => new ChessPlayer(new EvilBot(), type, GameDurationMilliseconds),
                 _ => new ChessPlayer(new HumanPlayer(boardUI), type)
             };
@@ -286,6 +286,16 @@ namespace ChessChallenge.Application
 
                 if (log)
                 {
+                    Log("Average Evals Per Think Across All Games", false, ConsoleColor.Blue);
+                    if (PlayerWhite.Bot is MyBot)
+                    {
+                        Log("White: " + ((MyBot)PlayerWhite.Bot).AverageEvalsPerThink, false, ConsoleColor.Blue);
+                    }
+                    if (PlayerBlack.Bot is MyBot)
+                    {
+                        Log("Black: " + ((MyBot)PlayerBlack.Bot).AverageEvalsPerThink, false, ConsoleColor.Blue);
+                    }
+
                     Log("Game Over: " + result, false, ConsoleColor.Blue);
                 }
 
@@ -313,6 +323,7 @@ namespace ChessChallenge.Application
                     else if (autoStartNextBotMatch)
                     {
                         Log("Match finished", false, ConsoleColor.Blue);
+                        
                     }
                 }
             }

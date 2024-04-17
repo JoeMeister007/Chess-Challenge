@@ -10,12 +10,22 @@ using System.Runtime;
 
 public class MyBot : IChessBot
 {
+    //new stuff for search comparison
+    private static int[] evalsPerThink = { 0,0 };
+    private static int[] numThinks = { 0, 0 };
+    private static int[] totalEvals = { 0, 0 };
+
+    private int botNum;
+    private static int numBots = 3; // cause it creates one at the start which'll put it at 4 aka 0
+
+    public double AverageEvalsPerThink { get => 1.0 * totalEvals[botNum] / numThinks[botNum]; }
+
     // milis
     private int timeLimit = 15000;
 
     // Having the timer control our depth is better since sometimes based on board state, more depths can be evaluated at time t
     // The problem is sometimes depth 4 could finish in less than timeLimit, so depth 5 starts, but once it starts it can't be stopped and could take seconds
-    private int maxDepth = 4;
+    private int maxDepth = 3;
 
     private OpeningBook whiteOpeningBook;
     private OpeningBook d4OpeningBook;
@@ -30,6 +40,21 @@ public class MyBot : IChessBot
 
     public MyBot()
     {
+        //each game gets played twice and white gets constructed first
+        //so we first need white to be 0 and black to be 1
+        //then we need white to be 1 and black to be 0
+        if (numBots % 4 == 0 || numBots % 4 == 3)
+        {
+            botNum = 0;
+        }
+        else
+        {
+            botNum = 1;
+        }
+        numBots++;
+
+        Console.WriteLine(botNum);
+
         whiteOpeningBook = new OpeningBook(true, theLondonPGN);
         d4OpeningBook = new OpeningBook(false, theNimzoIndian);
         e4OpeningBook = new OpeningBook(false, theCaroKann);
@@ -45,30 +70,32 @@ public class MyBot : IChessBot
         // Start timing
         stopwatch.Start();
 
-        if (board.IsWhiteToMove)
-        {
-            Move? move = whiteOpeningBook.GetMove(board);
-            if (move != null)
-            {
-                return (Move)move;
-            }
-        }
-        else
-        {
-            //try both black opening books
-            //(could have a flag for d4 or e4, but checking both is fine
-            //as it should be cheapish and positions can morph)
-            Move? move = d4OpeningBook.GetMove(board);
-            if (move != null)
-            {
-                return (Move)move;
-            }
-            move = e4OpeningBook.GetMove(board);
-            if (move != null)
-            {
-                return (Move)move;
-            }
-        }
+        //remove opening book for comparison
+
+        //if (board.IsWhiteToMove)
+        //{
+        //    Move? move = whiteOpeningBook.GetMove(board);
+        //    if (move != null)
+        //    {
+        //        return (Move)move;
+        //    }
+        //}
+        //else
+        //{
+        //    //try both black opening books
+        //    //(could have a flag for d4 or e4, but checking both is fine
+        //    //as it should be cheapish and positions can morph)
+        //    Move? move = d4OpeningBook.GetMove(board);
+        //    if (move != null)
+        //    {
+        //        return (Move)move;
+        //    }
+        //    move = e4OpeningBook.GetMove(board);
+        //    if (move != null)
+        //    {
+        //        return (Move)move;
+        //    }
+        //}
 
         Move? lastIterationBestMove = null;
         Move? bestMove = null;
@@ -76,6 +103,8 @@ public class MyBot : IChessBot
         double bestValueBlack = double.MaxValue;
         int depth = 1;
 
+        evalsPerThink[botNum] = 0;
+        numThinks[botNum]++;
 
         //White maximizes, black minimizes
 
@@ -109,6 +138,7 @@ public class MyBot : IChessBot
         }
 
         stopwatch.Stop();
+        totalEvals[botNum] += evalsPerThink[botNum];
 
         // Write the elapsed time in milliseconds
         // Console.WriteLine("Time elapsed: {0} ms at depth {1}", stopwatch.ElapsedMilliseconds, depth - 1);
@@ -527,6 +557,7 @@ private double evalKingSafety(Board board, double currentEval)
     //Gives an evaluation of the position of the current board (centipawns)
     private double evaluate(Board board)
     {
+        evalsPerThink[botNum]++;
         //return 0 if it's a draw
         if (board.IsDraw())
         {
