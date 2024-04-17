@@ -162,16 +162,15 @@ public class MyBot : IChessBot
                 {
                     maxEval.Value = moveOut.Value;
                     maxEval.Move = move;
-
-                    //alpha beta prune
-                    if (maxEval.Value > alpha)
-                    {
-                        alpha = maxEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                }
+                //alpha beta prune
+                if (maxEval.Value > alpha)
+                {
+                    alpha = maxEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
@@ -195,16 +194,22 @@ public class MyBot : IChessBot
                 {
                     maxEval.Value = moveOut.Value;
                     maxEval.Move = move;
+                }
 
-                    //alpha beta prune
-                    if (maxEval.Value > alpha)
-                    {
-                        alpha = maxEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                //see if it's better
+                if (moveOut.Value > maxEval.Value)
+                {
+                    maxEval.Value = moveOut.Value;
+                    maxEval.Move = move;
+                }
+                //alpha beta prune
+                if (maxEval.Value > alpha)
+                {
+                    alpha = maxEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
@@ -233,16 +238,15 @@ public class MyBot : IChessBot
                 {
                     minEval.Value = moveOut.Value;
                     minEval.Move = move;
-
-                    //alpha beta prune
-                    if (minEval.Value < beta)
-                    {
-                        beta = minEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                }
+                //alpha beta prune
+                if (minEval.Value < beta)
+                {
+                    beta = minEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
@@ -265,16 +269,15 @@ public class MyBot : IChessBot
                 {
                     minEval.Value = moveOut.Value;
                     minEval.Move = move;
-
-                    //alpha beta prune
-                    if (minEval.Value < beta)
-                    {
-                        beta = minEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                }
+                //alpha beta prune
+                if (minEval.Value < beta)
+                {
+                    beta = minEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
