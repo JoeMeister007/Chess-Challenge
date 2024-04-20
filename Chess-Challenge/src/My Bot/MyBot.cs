@@ -25,7 +25,7 @@ public class MyBot : IChessBot
 
     // Having the timer control our depth is better since sometimes based on board state, more depths can be evaluated at time t
     // The problem is sometimes depth 4 could finish in less than timeLimit, so depth 5 starts, but once it starts it can't be stopped and could take seconds
-    private int maxDepth = 3;
+    private int maxDepth = 5;
 
     private OpeningBook whiteOpeningBook;
     private OpeningBook d4OpeningBook;
@@ -207,12 +207,11 @@ public class MyBot : IChessBot
                 {
                     maxEval.Value = moveOut.Value;
                     maxEval.Move = bestMove.Value;
-
-                    //alpha beta prune
-                    if (maxEval.Value > alpha)
-                    {
-                        alpha = maxEval.Value;
-                    }
+                }
+                //alpha beta prune
+                if (maxEval.Value > alpha)
+                {
+                    alpha = maxEval.Value;
                 }
             }
 
@@ -238,16 +237,15 @@ public class MyBot : IChessBot
                 {
                     maxEval.Value = moveOut.Value;
                     maxEval.Move = move;
-
-                    //alpha beta prune
-                    if (maxEval.Value > alpha)
-                    {
-                        alpha = maxEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                }
+                //alpha beta prune
+                if (maxEval.Value > alpha)
+                {
+                    alpha = maxEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
@@ -271,16 +269,16 @@ public class MyBot : IChessBot
                 {
                     maxEval.Value = moveOut.Value;
                     maxEval.Move = move;
+                }
 
-                    //alpha beta prune
-                    if (maxEval.Value > alpha)
-                    {
-                        alpha = maxEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                //alpha beta prune
+                if (maxEval.Value > alpha)
+                {
+                    alpha = maxEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
@@ -308,11 +306,11 @@ public class MyBot : IChessBot
                 {
                     minEval.Value = moveOut.Value;
                     minEval.Move = bestMove.Value;
-                    //alpha beta prune
-                    if (minEval.Value < beta)
-                    {
-                        beta = minEval.Value;
-                    }
+                }
+                //alpha beta prune
+                if (minEval.Value < beta)
+                {
+                    beta = minEval.Value;
                 }
             }
 
@@ -338,15 +336,15 @@ public class MyBot : IChessBot
                     minEval.Value = moveOut.Value;
                     minEval.Move = move;
 
-                    //alpha beta prune
-                    if (minEval.Value < beta)
-                    {
-                        beta = minEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                }
+                //alpha beta prune
+                if (minEval.Value < beta)
+                {
+                    beta = minEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
@@ -370,15 +368,15 @@ public class MyBot : IChessBot
                     minEval.Value = moveOut.Value;
                     minEval.Move = move;
 
-                    //alpha beta prune
-                    if (minEval.Value < beta)
-                    {
-                        beta = minEval.Value;
-                        if (beta <= alpha)
-                        {
-                            break;
-                        }
-                    }
+                }
+                //alpha beta prune
+                if (minEval.Value < beta)
+                {
+                    beta = minEval.Value;
+                }
+                if (beta <= alpha)
+                {
+                    break;
                 }
 
             }
